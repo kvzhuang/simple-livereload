@@ -1,7 +1,7 @@
 /**
  * @overview
  *
- * @author 
+ * @author
  * @version 2012/07/04
  */
 
@@ -14,6 +14,7 @@ module.exports = {
     port: 35728,
     includeFile: [
         'php',
+        'coffee',
         'css',
         'scss',
         'sass',

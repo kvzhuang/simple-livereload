@@ -2,63 +2,91 @@ var fs = require('fs'),
     config = require('./config'),
     configFolderPath = process.cwd(),
     vm = require('vm'),
-    path = require('path');
+    spawn = require('child_process').spawn,
+    path = require('path'),
+    reverseFile;
+
+String.prototype.endsWith = function (str) {
+    return (this.match(str + "$") === str);
+}
 
 function reverseFile (dirname) {
     var dirname = dirname || configFolderPath;
     fs.readdir(dirname, function (err, files) {
+        if (files) {
+            files.forEach(function (file, idx) {
+                var fullpath = path.join(dirname, file),
+                    executeFlag = true;
 
-        files.forEach(function (file, idx) {
-            var fullpath = path.join(dirname, file),
-                executeFlag = true;
+                fs.stat(fullpath, function (err, stats) {
 
-            fs.stat(fullpath, function (err, stats) {
-
-                if (stats.isDirectory()) {
-                    reverseFile(fullpath);
-                }
-                else {
-                    config.excludeFile.forEach(function (fp, idx) {
-                        if (fullpath.match(fp)) {
-                            executeFlag = false;
-                            return;
-                        }
-                    });
-
-                    if (!executeFlag) {
-                        return;
+                    if (stats.isDirectory()) {
+                        reverseFile(fullpath);
                     }
+                    else {
+                        config.excludeFile.forEach(function (fp, idx) {
+                            if (fullpath.match(fp)) {
+                                executeFlag = false;
+                                return;
+                            }
+                        });
 
-                    config.includeFile.forEach(function (fp, idx) {
-                        if (fullpath.match(fp)) {
-                            watchFile(fullpath);
+                        if (!executeFlag) {
                             return;
                         }
-                    });
-                }
 
+                        config.includeFile.forEach(function (fp, idx) {
+                            if (fullpath.match(fp)) {
+                                watchFile(fullpath);
+                                return;
+                            }
+                        });
+
+                    }
+                });
             });
-        });
+        }
     });
 }
 
 function watchFile(fullpath) {
-
     fs.watchFile(fullpath, {presistent: true}, function (curr, prev) {
-
         if (+curr.mtime !== +prev.mtime) {
             console.log(fullpath + ': File modified');
+            if (fullpath.endsWith(".coffee")) {
+                coffeeFileSpawn(fullpath);
+            }
+            if (fullpath.endsWith(".scss")) {
+                scssFileSpawn(fullpath);
+            }
             module.exports.fire('update', {
                 fullpath: fullpath,
                 curr: curr,
                 prev: prev
-            });
 
+            });
         }
     });
 
 }
-
+function coffeeFileSpawn (fullpath) {
+    var coffee = spawn("coffee",["-c",fullpath]);
+    coffee.stdout.on("data", function (data){
+        console.log(fullpath+" generate .js file " + data);
+    });
+    coffee.stderr.on("data", function (data){
+        console.log(fullpath+" generate .js file - issue: " + data );
+    });
+}
+function scssFileSpawn (fullpath) {
+    var coffee = spawn("compass_lite",[fullpath, fullpath.replace("\.scss", "\.css")]);
+    coffee.stdout.on("data", function (data){
+        console.log(fullpath+" generate .css file " + data);
+    });
+    coffee.stderr.on("data", function (data){
+        console.log(fullpath+" generate .css file - issue: " + data );
+    });
+}
 /**
   * Set export instances, and set setter.
   */
