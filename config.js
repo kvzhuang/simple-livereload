@@ -22,7 +22,8 @@ module.exports = {
     ],
     excludeFile: [
         'swp',
-        'swa'
+        'swa',
+        '/index/static/mimgs'
     ]
 };
 

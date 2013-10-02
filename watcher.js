@@ -20,7 +20,7 @@ function reverseFile (dirname) {
 
                 fs.stat(fullpath, function (err, stats) {
 
-                    if (stats.isDirectory()) {
+                    if (stats && stats.isDirectory()) {
                         reverseFile(fullpath);
                     }
                     else {
@@ -53,10 +53,7 @@ function watchFile(fullpath) {
     fs.watchFile(fullpath, {presistent: true}, function (curr, prev) {
         if (+curr.mtime !== +prev.mtime) {
             console.log(fullpath + ': File modified');
-            if (fullpath.endsWith(".coffee")) {
-                coffeeFileSpawn(fullpath);
-            }
-            if (fullpath.endsWith(".scss")) {
+            if (fullpath.indexOf('.scss', fullpath.length - '.scss'.length) !== -1) {
                 scssFileSpawn(fullpath);
             }
             module.exports.fire('update', {
@@ -79,11 +76,12 @@ function coffeeFileSpawn (fullpath) {
     });
 }
 function scssFileSpawn (fullpath) {
-    var coffee = spawn("compass_lite",[fullpath, fullpath.replace("\.scss", "\.css")]);
-    coffee.stdout.on("data", function (data){
+    console.log("compass_lite spawn");
+    var scssSpawn = spawn("compass_lite",[fullpath, fullpath.replace("\.scss", "\.css")]);
+    scssSpawn.stdout.on("data", function (data){
         console.log(fullpath+" generate .css file " + data);
     });
-    coffee.stderr.on("data", function (data){
+    scssSpawn.stderr.on("data", function (data){
         console.log(fullpath+" generate .css file - issue: " + data );
     });
 }
